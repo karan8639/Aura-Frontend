@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
 import { api } from '../../lib/api';
-import { Briefcase, DollarSign, Inbox, Loader2, MapPin, Search, UploadCloud, X } from 'lucide-react';
+import { Briefcase, DollarSign, Inbox, Loader2, MapPin, Search, UploadCloud, X, ExternalLink, Globe } from 'lucide-react';
+import { useExternalJobs } from '../../hooks/useExternalJobs';
 
 interface Job {
   id?: number | string;
@@ -9,8 +10,11 @@ interface Job {
   location?: string;
   salary?: string;
   company_name?: string;
+  is_external?: boolean;
+  apply_url?: string;
   company?: {
     name?: string;
+    logo?: string;
   };
 }
 
@@ -23,6 +27,10 @@ export default function JobsFeed() {
   const [applyingJob, setApplyingJob] = useState<Job | null>(null);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showExternal, setShowExternal] = useState(true);
+
+  // Fetch external jobs from Adzuna
+  const { externalJobs, isLoadingExternal } = useExternalJobs('software engineer');
 
   useEffect(() => {
     void fetchJobs();
@@ -97,6 +105,32 @@ export default function JobsFeed() {
     return salary || 'Compensation available upon request';
   };
 
+  const getCompanyInitial = (job: Job) => {
+    const name = getCompanyName(job);
+    return name.charAt(0).toUpperCase();
+  };
+
+  const getBadgeColor = (text: string) => {
+    const lower = text.toLowerCase();
+    if (lower.includes('remote')) return 'bg-blue-50 text-blue-700';
+    if (lower.includes('senior')) return 'bg-purple-50 text-purple-700';
+    if (lower.includes('full-time')) return 'bg-green-50 text-green-700';
+    if (lower.includes('part-time')) return 'bg-orange-50 text-orange-700';
+    return 'bg-slate-100 text-slate-700';
+  };
+
+  const getAvatarGradient = (initial: string) => {
+    const colors = [
+      'from-emerald-400 to-emerald-600',
+      'from-blue-400 to-blue-600',
+      'from-purple-400 to-purple-600',
+      'from-rose-400 to-rose-600',
+      'from-amber-400 to-amber-600',
+    ];
+    const index = initial.charCodeAt(0) % colors.length;
+    return colors[index];
+  };
+
   const applyJobFilter = (sourceJobs: Job[], query: string) => {
     const normalizedQuery = query.trim().toLowerCase();
 
@@ -112,8 +146,14 @@ export default function JobsFeed() {
   };
 
   useEffect(() => {
-    setFilteredJobs(applyJobFilter(jobs, searchQuery));
-  }, [jobs, searchQuery]);
+    // Merge internal and external jobs
+    let allJobs = [...jobs];
+    if (showExternal && externalJobs.length > 0) {
+      allJobs = [...jobs, ...externalJobs];
+    }
+
+    setFilteredJobs(applyJobFilter(allJobs, searchQuery));
+  }, [jobs, searchQuery, externalJobs, showExternal]);
 
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 font-sans text-slate-950">
@@ -125,15 +165,41 @@ export default function JobsFeed() {
         </section>
 
         <div className="mb-8 rounded-[28px] border border-slate-200/70 bg-white/80 p-3 shadow-[0_20px_60px_rgba(15,23,42,0.06)] backdrop-blur">
-          <div className="flex items-center gap-3 rounded-[22px] bg-slate-50 px-4 py-3">
-            <Search className="h-5 w-5 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search by title or location"
-              className="w-full border-0 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-            />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3 rounded-[22px] bg-slate-50 px-4 py-3 flex-1">
+              <Search className="h-5 w-5 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search by title or location"
+                className="w-full border-0 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
+              />
+            </div>
+            
+            <button
+              type="button"
+              onClick={() => setShowExternal(!showExternal)}
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                showExternal
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  : 'bg-slate-100 text-slate-600 border border-slate-200'
+              }`}
+              title={showExternal ? 'Showing Aura + External Jobs' : 'Showing Aura Jobs Only'}
+            >
+              <Globe className="h-4 w-4" />
+              {isLoadingExternal ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="hidden sm:inline">Loading...</span>
+                </>
+              ) : (
+                <>
+                  External
+                  {externalJobs.length > 0 && <span className="ml-1 text-xs font-bold">+{externalJobs.length}</span>}
+                </>
+              )}
+            </button>
           </div>
         </div>
 
@@ -177,38 +243,77 @@ export default function JobsFeed() {
           </div>
         ) : (
           <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
-            {filteredJobs.map((job, index) => (
-              <article
-                key={job?.id ?? `job-${index}`}
-                className="group transform rounded-3xl border border-slate-100 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
-              >
-                <div className="mb-5 flex items-center gap-3 text-slate-500">
-                  <Briefcase className="h-5 w-5 text-emerald-600" />
-                  <span className="text-sm font-medium text-emerald-700">Opportunity</span>
-                </div>
-                <h2 className="mb-2 text-xl font-semibold text-slate-950">{getTitle(job)}</h2>
-                <p className="mb-5 text-sm text-slate-500">{getCompanyName(job)}</p>
-
-                <div className="mb-6 flex flex-wrap gap-3">
-                  <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 text-sm text-slate-700">
-                    <MapPin className="h-4 w-4 text-slate-400" />
-                    {getLocation(job)}
-                  </span>
-                  <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 text-sm text-slate-700">
-                    <DollarSign className="h-4 w-4 text-slate-400" />
-                    {getSalary(job)}
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setApplyingJob(job)}
-                  className="inline-flex w-full items-center justify-center rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
+            {filteredJobs.map((job, index) => {
+              const isExternal = job?.is_external === true && job?.apply_url;
+              const initial = getCompanyInitial(job);
+              const gradientClass = getAvatarGradient(initial);
+              return (
+                <article
+                  key={job?.id ?? `job-${index}`}
+                  className="group transform rounded-3xl border border-slate-100 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-md overflow-hidden"
                 >
-                  Apply Now
-                </button>
-              </article>
-            ))}
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="shrink-0">
+                      {job?.company?.logo ? (
+                        <img
+                          src={job.company.logo}
+                          alt={getCompanyName(job)}
+                          className="h-12 w-12 rounded-lg object-cover border border-slate-200"
+                        />
+                      ) : (
+                        <div
+                          className={`h-12 w-12 rounded-lg flex items-center justify-center text-white font-bold text-sm bg-linear-to-br ${gradientClass}`}
+                        >
+                          {initial}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-lg font-semibold text-slate-950 truncate">{getTitle(job)}</h2>
+                      <p className="text-sm text-slate-600">{getCompanyName(job)}</p>
+                    </div>
+                  </div>
+
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    {getLocation(job) && (
+                      <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${getBadgeColor(getLocation(job))}`}>
+                        <MapPin className="h-3 w-3" />
+                        {getLocation(job)}
+                      </span>
+                    )}
+                    {getSalary(job) && !getSalary(job).includes('upon request') && (
+                      <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${getBadgeColor('salary')}`}>
+                        <DollarSign className="h-3 w-3" />
+                        {getSalary(job)}
+                      </span>
+                    )}
+                    <span className="inline-flex items-center gap-1 rounded-full bg-green-50 text-green-700 px-3 py-1 text-xs font-medium">
+                      {isExternal ? '📤 External' : '✓ Apply Here'}
+                    </span>
+                  </div>
+
+                  {isExternal ? (
+                    <a
+                      href={job.apply_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Apply Externally
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setApplyingJob(job)}
+                      className="inline-flex w-full items-center justify-center rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                    >
+                      Apply Now
+                    </button>
+                  )}
+                </article>
+              );
+            })}
           </div>
         )}
 

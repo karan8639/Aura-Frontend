@@ -1,5 +1,5 @@
 import { Navigate, Link } from 'react-router-dom';
-import { Building, LayoutDashboard, Zap } from 'lucide-react';
+import { Building, LayoutDashboard, Zap, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const features = [
@@ -37,12 +37,12 @@ export default function LandingPage() {
       <div className="pointer-events-none absolute top-0 right-0 -mr-20 -mt-20 h-96 w-96 rounded-full bg-emerald-200/30 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 left-0 -mb-24 -ml-24 h-80 w-80 rounded-full bg-slate-200/70 blur-3xl" />
       <header className="relative mx-auto flex max-w-7xl items-center justify-between px-4 py-6 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600/10 text-sm font-semibold text-emerald-700">
-            A
+        <Link to="/" className="inline-flex items-center gap-3">
+          <div className="bg-slate-900 text-white p-1.5 rounded-lg flex items-center justify-center">
+            <Sparkles size={20} />
           </div>
-          <span className="text-lg font-semibold tracking-tight text-slate-900">Aura</span>
-        </div>
+          <span className="text-xl font-extrabold tracking-tight text-slate-900">Aura</span>
+        </Link>
 
         <Link
           to="/login"
@@ -54,11 +54,11 @@ export default function LandingPage() {
 
       <main className="mx-auto flex max-w-7xl flex-col px-4 pb-16 pt-6 sm:px-6 lg:px-8 lg:pb-24 lg:pt-10">
         <section className="overflow-hidden rounded-[36px] border border-slate-200/70 bg-white p-8 shadow-[0_30px_80px_rgba(15,23,42,0.06)] sm:p-12 lg:p-16">
-          <div className="grid items-center gap-12 lg:grid-cols-[1.15fr_0.85fr]">
-            <div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+            <div className="space-y-8">
               <p className="mb-4 text-sm font-semibold uppercase tracking-[0.28em] text-emerald-600">Aura Talent</p>
               <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
-                Where <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-400">Top Talent</span> Meets Exceptional Companies.
+                Where <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent inline-block">Top Talent</span> Meets Exceptional Companies.
               </h1>
               <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-500">
                 Aura is the modern job board designed for seamless hiring and effortless applications.
@@ -90,7 +90,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="relative mt-4 rounded-[36px] border border-white/40 bg-white/60 p-6 shadow-xl backdrop-blur-md sm:mt-0">
+            <div className="relative mt-4 rounded-[36px] border border-white/40 bg-white/60 p-6 shadow-xl backdrop-blur-md sm:mt-0 hover:-translate-y-2 transition-transform duration-500">
               <div className="absolute inset-0 rounded-[36px] bg-gradient-to-br from-slate-100/80 via-white/40 to-white opacity-80" />
               <div className="relative space-y-5">
                 <div className="flex items-center justify-between gap-4 rounded-3xl bg-white/85 px-5 py-4 shadow-sm">

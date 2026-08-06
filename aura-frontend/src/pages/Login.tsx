@@ -26,6 +26,14 @@ export default function Login() {
       const token = response.data.access || response.data.token;
       const userPayload = response.data.user ?? response.data;
 
+
+
+      if (response.data.role === 'EMPLOYER') {
+    navigate('/employer/dashboard');
+} else {
+    navigate('/jobs');
+}
+
       if (token) {
         login(token, userPayload);
         toast.success('Welcome back');
